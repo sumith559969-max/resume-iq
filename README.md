@@ -1,5 +1,17 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Email confirmation redirects
+
+`NEXT_PUBLIC_APP_URL` optionally overrides the origin used for email confirmation links. It is set in `.env.local` to the current development machine's LAN address so another device on the same network can reach the callback. Keep it unset in Vercel to use the domain serving the page, or set it to a real deployment URL when a canonical domain is required. Add the callback URL to Supabase Auth's allowed redirect URLs.
+
+For confirmation links opened on a different device, configure the Supabase Confirm signup email template to link directly to the callback with the token hash, for example:
+
+```text
+{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email
+```
+
+The callback also supports the standard PKCE `code` flow when the confirmation is completed in the same browser that initiated registration.
+
 ## Getting Started
 
 First, run the development server:
