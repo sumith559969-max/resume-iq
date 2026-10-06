@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, Eye, EyeOff, LoaderCircle, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  Sparkles,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ensureUserProfile } from "@/lib/supabase/profile";
 
@@ -18,24 +25,41 @@ function friendlyAuthError(message: string) {
   if (normalized.includes("invalid login credentials")) {
     return "That email and password combination doesn't match. Check your details and try again.";
   }
+
   if (normalized.includes("email not confirmed")) {
     return "Please confirm your email using the link we sent before signing in.";
   }
-  if (normalized.includes("already registered") || normalized.includes("already been registered")) {
+
+  if (
+    normalized.includes("already registered") ||
+    normalized.includes("already been registered")
+  ) {
     return "An account with this email already exists. Try signing in instead.";
   }
+
   if (normalized.includes("password")) {
     return "Please choose a stronger password and try again.";
   }
-  if (normalized.includes("rate limit") || normalized.includes("too many requests")) {
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests")
+  ) {
     return "There have been a few too many attempts. Please wait a moment and try again.";
   }
 
   return "We couldn't complete that request. Please check your details and try again.";
 }
 
-function developmentErrorDetail(error: { message: string; code?: string; status?: number }) {
-  if (process.env.NODE_ENV !== "development" || error.message.includes("Development detail:")) {
+function developmentErrorDetail(error: {
+  message: string;
+  code?: string;
+  status?: number;
+}) {
+  if (
+    process.env.NODE_ENV !== "development" ||
+    error.message.includes("Development detail:")
+  ) {
     return "";
   }
 
@@ -43,12 +67,15 @@ function developmentErrorDetail(error: { message: string; code?: string; status?
     .filter(Boolean)
     .join(" | ");
 
-  return `\n\nDevelopment detail: ${metadata ? `${metadata}: ` : ""}${error.message}`;
+  return `\n\nDevelopment detail: ${
+    metadata ? `${metadata}: ` : ""
+  }${error.message}`;
 }
 
 export function AuthForm({ mode, initialError }: AuthFormProps) {
   const isRegister = mode === "register";
   const router = useRouter();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,7 +105,9 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
       const supabase = createClient();
 
       if (isRegister) {
-        const appOrigin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+        const appOrigin =
+          process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+
         const callbackUrl = new URL("/auth/callback", appOrigin);
         callbackUrl.searchParams.set("next", "/dashboard");
 
@@ -92,7 +121,11 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
         });
 
         if (signUpError) {
-          setError(`${friendlyAuthError(signUpError.message)}${developmentErrorDetail(signUpError)}`);
+          setError(
+            `${friendlyAuthError(signUpError.message)}${developmentErrorDetail(
+              signUpError,
+            )}`,
+          );
           return;
         }
 
@@ -107,10 +140,18 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
         return;
       }
 
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (signInError) {
-        setError(`${friendlyAuthError(signInError.message)}${developmentErrorDetail(signInError)}`);
+        setError(
+          `${friendlyAuthError(signInError.message)}${developmentErrorDetail(
+            signInError,
+          )}`,
+        );
         return;
       }
 
@@ -125,7 +166,11 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
         caughtError instanceof Error
           ? caughtError.message.startsWith("Your account is ready,")
             ? caughtError.message
-            : `${friendlyAuthError(caughtError.message)}${developmentErrorDetail({ message: caughtError.message })}`
+            : `${friendlyAuthError(
+                caughtError.message,
+              )}${developmentErrorDetail({
+                message: caughtError.message,
+              })}`
           : "We couldn't complete that request. Please try again.",
       );
     } finally {
@@ -139,11 +184,17 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
         <div className="auth-confirm-icon">
           <CheckCircle2 size={23} aria-hidden="true" />
         </div>
+
         <p className="auth-kicker">One quick check</p>
+
         <h1 className="auth-title">Check your inbox</h1>
+
         <p className="auth-copy">
-          We sent a confirmation link to <span className="break-all font-medium">{email}</span>. Confirm your email to finish creating your account.
+          We sent a confirmation link to{" "}
+          <span className="break-all font-medium">{email}</span>. Confirm your
+          email to finish creating your account.
         </p>
+
         <p className="auth-switch">
           Already confirmed? <Link href="/login">Sign in</Link>
         </p>
@@ -153,10 +204,18 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
 
   return (
     <section className="auth-panel">
-      <p className="auth-kicker">{isRegister ? "Start with clarity" : "Welcome back"}</p>
-      <h1 className="auth-title">{isRegister ? "Create your account" : "Sign in to ResumeIQ"}</h1>
+      <p className="auth-kicker">
+        {isRegister ? "Start with clarity" : "Welcome back"}
+      </p>
+
+      <h1 className="auth-title">
+        {isRegister ? "Create your account" : "Sign in to ResumeIQ"}
+      </h1>
+
       <p className="auth-copy">
-        {isRegister ? "A more confident next move starts here." : "Pick up where your next career move begins."}
+        {isRegister
+          ? "A more confident next move starts here."
+          : "Pick up where your next career move begins."}
       </p>
 
       {error && (
@@ -168,7 +227,10 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
       <form className="auth-form" onSubmit={handleSubmit}>
         {isRegister && (
           <div className="auth-field">
-            <label className="auth-label" htmlFor="full-name">Full name</label>
+            <label className="auth-label" htmlFor="full-name">
+              Full name
+            </label>
+
             <input
               autoComplete="name"
               className="auth-input"
@@ -182,8 +244,12 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
             />
           </div>
         )}
+
         <div className="auth-field">
-          <label className="auth-label" htmlFor="email">Email address</label>
+          <label className="auth-label" htmlFor="email">
+            Email address
+          </label>
+
           <input
             autoComplete="email"
             className="auth-input"
@@ -196,34 +262,51 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
             value={email}
           />
         </div>
+
         <div className="auth-field">
-          <label className="auth-label" htmlFor="password">Password</label>
+          <label className="auth-label" htmlFor="password">
+            Password
+          </label>
+
           <div className="auth-input-wrap">
             <input
-              autoComplete={isRegister ? "new-password" : "current-password"}
+              autoComplete={
+                isRegister ? "new-password" : "current-password"
+              }
               className="auth-input has-toggle"
               id="password"
               minLength={8}
               name="password"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder={isRegister ? "At least 8 characters" : "Your password"}
+              placeholder={
+                isRegister ? "At least 8 characters" : "Your password"
+              }
               required
               type={showPassword ? "text" : "password"}
               value={password}
             />
+
             <button
               aria-label={showPassword ? "Hide password" : "Show password"}
               className="auth-password-toggle"
               onClick={() => setShowPassword((visible) => !visible)}
               type="button"
             >
-              {showPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+              {showPassword ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
+
         {isRegister ? (
           <div className="auth-field">
-            <label className="auth-label" htmlFor="confirm-password">Confirm password</label>
+            <label className="auth-label" htmlFor="confirm-password">
+              Confirm password
+            </label>
+
             <input
               autoComplete="new-password"
               className="auth-input"
@@ -239,15 +322,33 @@ export function AuthForm({ mode, initialError }: AuthFormProps) {
           </div>
         ) : (
           <div className="auth-forgot">
-            <span aria-label="Password reset is not available yet">Forgot password?</span>
+            <Link href="/forgot-password">
+              Forgot password?
+            </Link>
           </div>
         )}
+
         <button
           className="auth-submit"
           disabled={isSubmitting}
           type="submit"
         >
-          {isSubmitting ? <LoaderCircle className="animate-spin" size={17} aria-hidden="true" /> : <>{isRegister ? "Create account" : "Sign in"}<ArrowRight className="transition-transform group-hover:translate-x-0.5" size={16} aria-hidden="true" /></>}
+          {isSubmitting ? (
+            <LoaderCircle
+              className="animate-spin"
+              size={17}
+              aria-hidden="true"
+            />
+          ) : (
+            <>
+              {isRegister ? "Create account" : "Sign in"}
+              <ArrowRight
+                className="transition-transform group-hover:translate-x-0.5"
+                size={16}
+                aria-hidden="true"
+              />
+            </>
+          )}
         </button>
       </form>
 
@@ -265,12 +366,23 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="auth-page">
       <div className="auth-shell-content">
-        <Link aria-label="ResumeIQ home" className="workspace-brand auth-brand" href="/">
-          <span className="workspace-brand-mark" aria-hidden="true">R</span>
+        <Link
+          aria-label="ResumeIQ home"
+          className="workspace-brand auth-brand"
+          href="/"
+        >
+          <span className="workspace-brand-mark" aria-hidden="true">
+            R
+          </span>
           ResumeIQ
         </Link>
+
         {children}
-        <p className="auth-footnote"><Sparkles size={12} aria-hidden="true" /> Clear feedback for your next career move</p>
+
+        <p className="auth-footnote">
+          <Sparkles size={12} aria-hidden="true" />
+          Clear feedback for your next career move
+        </p>
       </div>
     </main>
   );
