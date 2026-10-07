@@ -280,11 +280,11 @@ export async function createGeminiInteraction(
       if (!shouldRetry) {
         console.error(
           "[ResumeIQ] gemini: request failed",
-          {
+          JSON.stringify({
             ...metadata,
             attempt: attempt + 1,
             retriesUsed: attempt,
-          },
+          }),
         );
 
         throw error;
@@ -304,12 +304,12 @@ export async function createGeminiInteraction(
 
       console.warn(
         "[ResumeIQ] gemini: temporary request failure, retrying",
-        {
+        JSON.stringify({
           ...metadata,
           attempt: attempt + 1,
           maxAttempts: maxRetries + 1,
           retryInMilliseconds: delayMs,
-        },
+        }),
       );
 
       await sleepFn(delayMs);
@@ -386,7 +386,7 @@ export async function analyzeCv(
   } catch (error) {
     console.error(
       "[ResumeIQ] gemini: client initialization failed",
-      safeErrorMetadata(error, apiKey),
+      JSON.stringify(safeErrorMetadata(error, apiKey)),
     );
 
     throw error;
@@ -448,7 +448,7 @@ export async function analyzeCv(
   } catch (error) {
     console.error(
       "[ResumeIQ] gemini: final request failure",
-      safeErrorMetadata(error, apiKey),
+      JSON.stringify(safeErrorMetadata(error, apiKey)),
     );
 
     throw error;
@@ -472,10 +472,13 @@ export async function analyzeCv(
   try {
     parsed = JSON.parse(response.output_text);
   } catch (error) {
-    console.error("[ResumeIQ] gemini: JSON parse failed", {
-      ...safeErrorMetadata(error, apiKey),
-      responseTextCharacters: response.output_text.length,
-    });
+    console.error(
+      "[ResumeIQ] gemini: JSON parse failed",
+      JSON.stringify({
+        ...safeErrorMetadata(error, apiKey),
+        responseTextCharacters: response.output_text.length,
+      }),
+    );
 
     throw error;
   }
@@ -500,11 +503,11 @@ export async function analyzeCv(
   } catch (error) {
     console.error(
       "[ResumeIQ] gemini: schema validation failed",
-      {
+      JSON.stringify({
         ...safeErrorMetadata(error, apiKey),
         responseTextCharacters:
           response.output_text.length,
-      },
+      }),
     );
 
     throw error;

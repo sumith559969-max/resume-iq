@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -23,7 +24,7 @@ export default function ResetPasswordPage() {
 
       if (!session) {
         setError(
-          "This password reset link is invalid or has expired. Please request a new one."
+          "This password reset link is invalid or has expired. Please request a new one.",
         );
       }
 
@@ -72,110 +73,158 @@ export default function ResetPasswordPage() {
 
   if (checking) {
     return (
-      <main className="min-h-screen bg-[#f4f1eb] flex items-center justify-center">
-        <p className="text-sm text-black/50">
-          Verifying your password reset link...
-        </p>
+      <main className="auth-page">
+        <div className="auth-shell-content">
+          <Link
+            href="/"
+            className="brand auth-brand"
+            aria-label="ResumeIQ home"
+          >
+            <span className="brand-symbol" aria-hidden="true">
+              R
+            </span>
+            <span>RESUMEIQ</span>
+          </Link>
+
+          <section className="auth-panel" aria-live="polite">
+            <p className="auth-kicker">Account security</p>
+
+            <h1 className="auth-title">Verifying your link.</h1>
+
+            <p className="auth-copy">
+              Verifying your password reset link...
+            </p>
+          </section>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f1eb] px-5 py-6 sm:px-8 sm:py-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-[1500px] items-center justify-center rounded-[32px] border border-black/10 bg-[#f8f6f1] px-6 py-12 shadow-[0_20px_80px_rgba(0,0,0,0.06)]">
-        <div className="w-full max-w-md">
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="mb-12 text-xs font-medium uppercase tracking-[0.22em] text-black/60"
-          >
-            ResumeIQ
-          </button>
+    <main className="auth-page">
+      <div className="auth-shell-content">
+        <Link
+          href="/"
+          className="brand auth-brand"
+          aria-label="ResumeIQ home"
+        >
+          <span className="brand-symbol" aria-hidden="true">
+            R
+          </span>
+          <span>RESUMEIQ</span>
+        </Link>
 
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-black/40">
-            Account security
-          </p>
+        <section
+          className="auth-panel"
+          aria-labelledby="reset-password-title"
+        >
+          <p className="auth-kicker">Account security</p>
 
-          <h1 className="text-4xl font-light tracking-[-0.04em] text-black sm:text-5xl">
+          <h1 id="reset-password-title" className="auth-title">
             Reset your password.
           </h1>
 
-          <p className="mt-4 text-sm leading-6 text-black/50">
+          <p className="auth-copy">
             Create a new password for your ResumeIQ account.
           </p>
 
           {error && (
-            <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
+            <>
+              <div className="auth-error" role="alert">
+                {error}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="auth-submit"
+              >
+                Back to sign in
+              </button>
+            </>
           )}
 
-          {success ? (
-            <div className="mt-8 rounded-2xl border border-black/10 bg-black px-4 py-4 text-sm text-white">
-              Password updated successfully. Redirecting you to sign in...
-            </div>
-          ) : !error ? (
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-black/50"
-                >
+          {success && (
+            <>
+              <div className="auth-confirm-icon" aria-hidden="true">
+                ✓
+              </div>
+
+              <p className="auth-copy" role="status">
+                Password updated successfully. Redirecting you to sign in...
+              </p>
+            </>
+          )}
+
+          {!error && !success && (
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="auth-field">
+                <label htmlFor="password" className="auth-label">
                   New password
                 </label>
 
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="At least 8 characters"
-                  autoComplete="new-password"
-                  required
-                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/5"
-                />
+                <div className="auth-input-wrap">
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    className="auth-input"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-black/50"
-                >
+              <div className="auth-field">
+                <label htmlFor="confirmPassword" className="auth-label">
                   Confirm password
                 </label>
 
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) =>
-                    setConfirmPassword(event.target.value)
-                  }
-                  placeholder="Enter your password again"
-                  autoComplete="new-password"
-                  required
-                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-black/30 focus:ring-2 focus:ring-black/5"
-                />
+                <div className="auth-input-wrap">
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(event) =>
+                      setConfirmPassword(event.target.value)
+                    }
+                    placeholder="Enter your password again"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    className="auth-input"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-black px-5 py-3.5 text-sm font-medium text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
+                className="auth-submit"
               >
                 {loading ? "Updating password..." : "Update password"}
+
+                {!loading && (
+                  <span aria-hidden="true">↗</span>
+                )}
               </button>
             </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.push("/login")}
-              className="mt-6 text-sm font-medium text-black underline underline-offset-4"
-            >
-              Back to sign in
-            </button>
           )}
-        </div>
+
+          {!success && (
+            <p className="auth-switch">
+              <Link href="/login">← Back to Sign In</Link>
+            </p>
+          )}
+
+          <p className="auth-footnote">
+            <span aria-hidden="true">✓</span>
+            Secure password recovery
+          </p>
+        </section>
       </div>
     </main>
   );

@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import * as canvas from "@napi-rs/canvas";
 
 import { NextResponse } from "next/server";
 
@@ -447,10 +447,31 @@ export async function POST(request: Request) {
 
   let extractedText = "";
 
-  let parser: PDFParse | undefined;
+  let parser:
+    | {
+        getText: () => Promise<{ text: string }>;
+        destroy: () => Promise<void>;
+      }
+    | undefined;
 
   try {
-    parser = new PDFParse({ data: downloadedBytes });
+    Object.assign(globalThis, {
+      DOMMatrix: canvas.DOMMatrix,
+      ImageData: canvas.ImageData,
+      Path2D: canvas.Path2D,
+      DOMPoint: canvas.DOMPoint,
+      DOMRect: canvas.DOMRect,
+    });
+
+    const [{ CanvasFactory }, { PDFParse }] = await Promise.all([
+      import("pdf-parse/worker"),
+      import("pdf-parse"),
+    ]);
+
+    parser = new PDFParse({
+      data: downloadedBytes,
+      CanvasFactory,
+    });
 
     const result = await parser.getText();
 
