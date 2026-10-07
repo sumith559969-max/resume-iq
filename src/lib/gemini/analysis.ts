@@ -146,7 +146,15 @@ function safeErrorMetadata(error: unknown, apiKey: string) {
   };
 }
 
-function isRetryableGeminiError(error: unknown): boolean {
+/**
+ * Determines whether a Gemini failure is temporary and safe to retry.
+ *
+ * Daily quota exhaustion is intentionally not retried because additional
+ * attempts will not restore the available daily quota.
+ */
+export function isRetryableGeminiError(
+  error: unknown,
+): boolean {
   const sdkError = error as {
     status?: unknown;
     statusCode?: unknown;
@@ -171,7 +179,6 @@ function isRetryableGeminiError(error: unknown): boolean {
       ? sdkError.message.toLowerCase()
       : "";
 
-  // Do not retry a clearly exhausted daily quota.
   const isDailyQuotaExceeded =
     message.includes("daily quota") ||
     message.includes("quota exceeded for the day") ||
@@ -182,7 +189,6 @@ function isRetryableGeminiError(error: unknown): boolean {
     return false;
   }
 
-  // Temporary rate limiting.
   if (
     code.includes("rate_limit") ||
     message.includes("rate limit exceeded") ||
@@ -191,7 +197,6 @@ function isRetryableGeminiError(error: unknown): boolean {
     return true;
   }
 
-  // Temporary server-side failures.
   return (
     status === 408 ||
     status === 429 ||
@@ -228,10 +233,27 @@ function isGeminiResponse(
   );
 }
 
-async function createGeminiInteraction(
+/**
+ * Calls Gemini with bounded retry handling for temporary failures.
+ *
+ * Retry policy:
+ * - Up to 3 retries after the initial request, for 4 attempts total.
+ * - Retries temporary rate-limit, timeout, and server errors.
+ * - Does not retry clearly exhausted daily quotas.
+ * - Uses exponential backoff with jitter to avoid repeated requests
+ *   arriving at the same time.
+ * - Caps each retry delay at 10 seconds.
+ * - Re-throws the final error so the API route can return a safe,
+ *   user-friendly failure message.
+ *
+ * The sleep function can be replaced in automated tests so retry behavior
+ * can be verified without waiting or making real Gemini requests.
+ */
+export async function createGeminiInteraction(
   client: GoogleGenAI,
   request: Parameters<GoogleGenAI["interactions"]["create"]>[0],
   apiKey: string,
+  sleepFn: (milliseconds: number) => Promise<void> = sleep,
 ): Promise<GeminiResponse> {
   const maxRetries = 3;
   const baseDelayMs = 1500;
@@ -290,7 +312,7 @@ async function createGeminiInteraction(
         },
       );
 
-      await sleep(delayMs);
+      await sleepFn(delayMs);
     }
   }
 

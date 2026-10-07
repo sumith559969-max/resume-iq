@@ -1,13 +1,19 @@
 import { PDFParse } from "pdf-parse";
+
 import { NextResponse } from "next/server";
+
 import { analyzeCv } from "@/lib/gemini/analysis";
+
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 const MAX_REQUEST_SIZE = MAX_FILE_SIZE + 64 * 1024;
+
 const BUCKET_NAME = "cv-files";
+
 const ANALYSIS_FAILURE =
   "We couldn't analyse your CV right now. Your uploaded CV is safe. Please try again.";
 
@@ -19,18 +25,22 @@ async function readBoundedBody(request: Request) {
   if (!request.body) return null;
 
   const reader = request.body.getReader();
+
   const chunks: Uint8Array[] = [];
+
   let totalBytes = 0;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
+
       if (done) break;
 
       totalBytes += value.byteLength;
 
       if (totalBytes > MAX_REQUEST_SIZE) {
         await reader.cancel();
+
         return null;
       }
 
@@ -41,10 +51,12 @@ async function readBoundedBody(request: Request) {
   }
 
   const body = new Uint8Array(totalBytes);
+
   let offset = 0;
 
   for (const chunk of chunks) {
     body.set(chunk, offset);
+
     offset += chunk.byteLength;
   }
 
@@ -62,6 +74,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+
   const {
     data: { user },
     error: authError,
@@ -127,7 +140,9 @@ export async function POST(request: Request) {
   }
 
   const file = formData.get("file");
+
   const requestId = formData.get("request_id");
+
   const rawJobDescription = formData.get("job_description");
 
   if (
@@ -156,11 +171,31 @@ export async function POST(request: Request) {
       ? rawJobDescription.trim()
       : null;
 
-  if (jobDescription && jobDescription.length > 6000) {
-    return jsonError(
-      "Please shorten the job description to 6,000 characters or fewer.",
-      400,
-    );
+  if (jobDescription) {
+    if (jobDescription.length < 50) {
+      return jsonError(
+        "Please provide a more detailed job description with at least 50 characters.",
+        400,
+      );
+    }
+
+    if (jobDescription.length > 6000) {
+      return jsonError(
+        "Please shorten the job description to 6,000 characters or fewer.",
+        400,
+      );
+    }
+
+    const jobDescriptionWords = jobDescription
+      .split(/\s+/)
+      .filter((word) => /[\p{L}\p{N}]/u.test(word));
+
+    if (jobDescriptionWords.length < 5) {
+      return jsonError(
+        "Please provide a more detailed job description with at least 5 words.",
+        400,
+      );
+    }
   }
 
   if (!(file instanceof File)) {
@@ -182,6 +217,7 @@ export async function POST(request: Request) {
   }
 
   const hasPdfExtension = file.name.toLowerCase().endsWith(".pdf");
+
   const hasPdfMimeType =
     !file.type || file.type === "application/pdf";
 
@@ -223,6 +259,7 @@ export async function POST(request: Request) {
   }
 
   const storagePath = `${user.id}/${requestId}.pdf`;
+
   const storedFilename = file.name.slice(0, 240);
 
   let uploadError: {
@@ -279,6 +316,7 @@ export async function POST(request: Request) {
   });
 
   let downloadedFile: Blob | null = null;
+
   let downloadError: {
     message: string;
     statusCode?: string;
@@ -290,6 +328,7 @@ export async function POST(request: Request) {
       .download(storagePath);
 
     downloadedFile = result.data;
+
     downloadError = result.error;
   } catch (error) {
     console.error("[ResumeIQ] storage download: request failed", {
@@ -315,20 +354,23 @@ export async function POST(request: Request) {
         await downloadedFile.arrayBuffer(),
       );
     } catch (error) {
-      console.error("[ResumeIQ] storage download: body conversion failed", {
-        bucket: BUCKET_NAME,
-        filePath: storagePath,
-        userId: user.id,
-        status: downloadError?.statusCode ?? "ok",
-        dataReturned: true,
-        contentType: downloadedFile.type || null,
-        errorName:
-          error instanceof Error ? error.name : "UnknownError",
-        errorMessage:
-          error instanceof Error ? error.message : String(error),
-        errorStack:
-          error instanceof Error ? error.stack : undefined,
-      });
+      console.error(
+        "[ResumeIQ] storage download: body conversion failed",
+        {
+          bucket: BUCKET_NAME,
+          filePath: storagePath,
+          userId: user.id,
+          status: downloadError?.statusCode ?? "ok",
+          dataReturned: true,
+          contentType: downloadedFile.type || null,
+          errorName:
+            error instanceof Error ? error.name : "UnknownError",
+          errorMessage:
+            error instanceof Error ? error.message : String(error),
+          errorStack:
+            error instanceof Error ? error.stack : undefined,
+        },
+      );
 
       return jsonError(ANALYSIS_FAILURE, 502);
     }
@@ -404,12 +446,14 @@ export async function POST(request: Request) {
   }
 
   let extractedText = "";
+
   let parser: PDFParse | undefined;
 
   try {
     parser = new PDFParse({ data: downloadedBytes });
 
     const result = await parser.getText();
+
     extractedText = result.text.trim();
   } catch (error) {
     console.error("[ResumeIQ] extraction: failed", {
@@ -585,7 +629,9 @@ export async function POST(request: Request) {
             ? error.message
             : String(error),
         errorStack:
-          error instanceof Error ? error.stack : undefined,
+          error instanceof Error
+            ? error.stack
+            : undefined,
         errorObject:
           error instanceof Error
             ? Object.getOwnPropertyNames(error).reduce<
@@ -602,6 +648,7 @@ export async function POST(request: Request) {
 
                 try {
                   JSON.stringify(value);
+
                   result[key] = value;
                 } catch {
                   result[key] = "[unserializable]";
